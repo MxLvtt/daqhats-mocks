@@ -3,4 +3,4 @@
 
 from .src.mcc118 import mcc118
 from .src.options import OptionFlags
-from .src.hat import HatError, HatIDs
+from .src.hat import HatError, HatIDs, hat_list
