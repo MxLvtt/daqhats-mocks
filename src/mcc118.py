@@ -1,15 +1,17 @@
 """Mocks for MCC118 boards"""
 
+from .options import OptionFlags
+
 class mcc118:
     """MCC118 board handler"""
     def __init__(self, address: int) -> None:
         self._address = address
 
-    def a_in_scan_actual_rate(self, num_channels: int, scan_rate: int) -> int:
+    def a_in_scan_actual_rate(self, num_channels: int, scan_rate: float) -> float:
         """Calculate and return the actual scan rate"""
         raise NotImplementedError()
 
-    def a_in_scan_start(self, channel_mask: str, a: int, scan_rate: int, options: OptionFlags) -> None:
+    def a_in_scan_start(self, channel_mask: str, a: int, scan_rate: float, options: OptionFlags) -> None:
         """Start a scan with the given configuration"""
         raise NotImplementedError()
 
