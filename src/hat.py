@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import IntEnum
 
+from .. import mock_config
+
 class HatError(Exception):
     """Hat specific error class"""
     pass
@@ -29,11 +31,19 @@ class HatIDs(IntEnum):
     MCC_152 = 2
 
 def hat_list(filter_by_id: int = HatIDs.ALL) -> list[DAQHatResult]:
-    return [
-        DAQHatResult(
-            address=0,
-            id=filter_by_id,
+    results: list[DAQHatResult] = []
+
+    for connected_board in mock_config.connected_boards:
+        if filter_by_id != HatIDs.ALL and filter_by_id != connected_board.board_type:
+            continue
+        hat_result = DAQHatResult(
+            address=connected_board.address,
+            id=connected_board.board_type,
             version=1,
-            product_name="MOCK_HAT"
+            product_name=connected_board.product_name
         )
-    ]
+        results.append(hat_result)
+
+    print(results)
+
+    return results

@@ -1,6 +1,8 @@
 # pylint: disable=C0103
 """daqhats mock library for local development"""
 
+from .config import mock_config
+
 from .src.dio import DIOConfigItem
 from .src.hat import HatError, HatIDs, hat_list
 from .src.interrupts import (

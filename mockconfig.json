@@ -1,0 +1,14 @@
+{
+    "connected_boards": [
+        {
+            "product_name": "mcc118-mock",
+            "board_type": 1,
+            "address": 0
+        },
+        {
+            "product_name": "mcc152-mock",
+            "board_type": 2,
+            "address": 1
+        }
+    ]
+}
