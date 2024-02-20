@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import IntEnum
 
 class HatError(Exception):
     """Hat specific error class"""
@@ -21,11 +22,11 @@ class DAQHatResult:
     version: int
     product_name: str
 
-@dataclass
-class HatIDs:
+class HatIDs(IntEnum):
     """Hat board IDs"""
     ALL = 0
     MCC_118 = 1
+    MCC_152 = 2
 
 def hat_list(filter_by_id: int = HatIDs.ALL) -> list[DAQHatResult]:
     return [

@@ -1,5 +1,4 @@
-from dataclasses import dataclass
+from enum import IntEnum
 
-@dataclass
-class OptionFlags:
+class OptionFlags(IntEnum):
     CONTINUOUS = 0x01
