@@ -31,6 +31,7 @@ class HatIDs(IntEnum):
     MCC_152 = 2
 
 def hat_list(filter_by_id: int = HatIDs.ALL) -> list[DAQHatResult]:
+    """Get a list of all connected HAT devices"""
     results: list[DAQHatResult] = []
 
     for connected_board in mock_config.connected_boards:
@@ -43,7 +44,5 @@ def hat_list(filter_by_id: int = HatIDs.ALL) -> list[DAQHatResult]:
             product_name=connected_board.product_name
         )
         results.append(hat_result)
-
-    print(results)
 
     return results

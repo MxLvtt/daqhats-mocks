@@ -1,6 +1,10 @@
 """Mocks for MCC118 boards"""
 
+from __future__ import annotations
 from dataclasses import dataclass
+import math
+from multiprocessing import Process, Queue
+from time import sleep, time_ns
 
 @dataclass
 class Mcc118ScanResult:
@@ -30,12 +34,52 @@ class Mcc118ScanResult:
     timeout: bool
     data: list[float]
 
+def time_ms() -> float:
+    return time_ns() / (1000.0**2)
+
 class mcc118:
     """MCC118 board handler"""
     def __init__(self, address: int) -> None:
         self._address = address
-        self._running = False
-        self.a_in_scan_cleanup()
+        self._curr_channels: list[int] = None
+        self._curr_scan_rate: float = None
+        self._curr_options: int = None
+        self._scan_process: Process | None = None
+
+    def _running(self) -> bool:
+        return self._scan_process is not None
+
+    def _scan_process_target(
+        self,
+        sample_rate_per_channel: float,
+        sample_buffer: Queue,
+        last_read_ms: float,
+        channels: list[int]
+    ) -> None:
+        t_0 = last_read_ms
+        s_Td_buff = 0.0
+        sr_ms = sample_rate_per_channel / 1000.0
+        dt_S_ms = 1.0 / sr_ms
+        def C(t_ms: float) -> float:
+            return math.sin(2 * math.pi * (t_ms / 800.0))
+        def add_samples_to_buffer(num: int, t_read: float):
+            print(f"Adding {num} samples to buffer!")
+            for n in range(0, num):
+                C_n = C(t_read + dt_S_ms * n - t_0)
+                sample_buffer.put(C_n)
+        while True:
+            sleep(1.0 / 1000.0)
+            num_samples_to_add = 0
+            now_ms = time_ms()
+            dt_r_ms = now_ms - last_read_ms
+            s_T = sr_ms * dt_r_ms
+            s_Ti = int(s_T)
+            s_Td = s_T - s_Ti
+            s_Td_buff += s_Td
+            num_samples_to_add += s_Ti + int(s_Td_buff)
+            add_samples_to_buffer(num_samples_to_add, last_read_ms)
+            s_Td_buff -= int(s_Td_buff)
+            last_read_ms = now_ms
 
     def a_in_scan_actual_rate(self, channel_count: int, sample_rate_per_channel: float) -> float:
         """Calculate and return the actual scan rate"""
@@ -52,35 +96,43 @@ class mcc118:
         self._curr_channels = self._channels_from_mask(channel_mask)
         self._curr_scan_rate = sample_rate_per_channel
         self._curr_options = options
-        self._running = True
+        self._buffer = Queue()
+        self._scan_process = Process(
+            target=self._scan_process_target,
+            args=(
+                sample_rate_per_channel,
+                self._buffer,
+                time_ms(),
+                self._curr_channels
+            )
+        )
+        self._scan_process.start()
 
     def a_in_scan_read(self, samples_per_channel: int, timeout: float) -> Mcc118ScanResult:
         """Read a batch of samples from the current scan"""
         fix_sample_count = 10
         samples = []
-        if samples_per_channel > 0:
-            samples = [1.74] * len(self._curr_channels) * samples_per_channel
-        elif samples_per_channel < 0:
-            samples = [1.74] * len(self._curr_channels) * fix_sample_count
+        while not self._buffer.empty():
+            samples.append(self._buffer.get())
         return Mcc118ScanResult(
-            running=self._running,
+            running=self._running(),
             hardware_overrun=False,
             buffer_overrun=False,
-            triggered=self._running,
+            triggered=self._running(),
             timeout=False,
             data=samples
         )
 
     def a_in_scan_cleanup(self) -> None:
         """Cleanup the scan and free the buffer"""
-        self._curr_channels: list[int] = None
-        self._curr_scan_rate: float = None
-        self._curr_options: int = None
+        return
 
     def a_in_scan_stop(self) -> None:
         """Stop the scan"""
+        if self._scan_process is not None:
+            self._scan_process.kill()
+            self._scan_process = None
         self.a_in_scan_cleanup()
-        self._running = False
 
     def _channels_from_mask(self, channel_mask: int) -> list[int]:
         max_channel_count = 8

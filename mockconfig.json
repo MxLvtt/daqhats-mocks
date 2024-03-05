@@ -10,5 +10,9 @@
             "board_type": 2,
             "address": 1
         }
-    ]
+    ],
+    "trigger": {
+        "duty_cycle": 0.8,
+        "period": 1.0
+    }
 }
